@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinTrack Pro - Daily Utilities Engine</title>
+    <!-- Tailwind CSS Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-900 font-sans min-h-screen text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+
+    <div class="max-w-md mx-auto min-h-screen flex flex-col justify-between p-4 pb-24">
+        <!-- Header Section -->
+        <header class="pt-4 pb-2 flex items-center justify-between border-b border-slate-800">
+            <div>
+                <h1 class="text-2xl font-black tracking-tight text-white">FinTrack <span class="text-indigo-400 font-medium text-lg">Daily</span></h1>
+                <p class="text-xs text-slate-400">Rozana ka hisab-kitab, ekdum fast.</p>
+            </div>
+            <button onclick="resetData()" class="text-[10px] bg-slate-800 hover:bg-rose-950/40 hover:text-rose-400 px-2.5 py-1.5 rounded-xl border border-slate-700/60 transition font-semibold cursor-pointer">Reset App 🔄</button>
+        </header>
+
+        <!-- Balance Layout Widget -->
+        <div class="grid grid-cols-2 gap-3 my-4">
+            <div class="bg-gradient-to-br from-slate-800 to-slate-850 p-4 rounded-2xl border border-slate-700/40 shadow-sm relative overflow-hidden">
+                <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">🏦 Bank Balance</p>
+                <h3 id="bank-display" class="text-xl font-black mt-1 text-white tracking-tight">₹0.00</h3>
+            </div>
+            <div class="bg-gradient-to-br from-slate-800 to-slate-850 p-4 rounded-2xl border border-slate-700/40 shadow-sm relative overflow-hidden">
+                <p class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">⚡ UPI Lite Wallet</p>
+                <h3 id="lite-display" class="text-xl font-black mt-1 text-white tracking-tight">₹0.00</h3>
+            </div>
+        </div>
+
+        <!-- Rapid Action Triggers -->
+        <div class="bg-slate-800/40 border border-slate-800 p-4 rounded-2xl mb-4">
+            <p class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wide">⚡ Quick Actions</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="openModal('income')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition shadow-sm cursor-pointer text-center">💰 Income / Money In</button>
+                <button onclick="openModal('expense')" class="bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition shadow-sm cursor-pointer text-center">💸 Kharcha Form</button>
+            </div>
+        </div>
+
+        <!-- Live Passbook Console -->
+        <div class="bg-slate-850 rounded-2xl p-4 border border-slate-800 flex-1 flex flex-col">
+            <h3 class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wide flex items-center justify-between">
+                <span>📋 Daily Passbook Log</span>
+                <span id="log-count" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">0 entries</span>
+            </h3>
+            
+            <div id="logs-container" class="space-y-2 max-h-[280px] overflow-y-auto custom-scrollbar pr-1 flex-1">
+                <!-- Data appends directly from storage mechanics -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Transaction Modal -->
+    <div id="tx-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 max-w-sm w-full rounded-2xl p-5 relative shadow-2xl">
+            <button onclick="closeModal()" class="absolute right-4 top-4 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 transition text-xs cursor-pointer">✕</button>
+            <h3 id="modal-title" class="text-base font-black text-white mb-4">Add Entry</h3>
+            
+            <form id="modal-form" onsubmit="saveEntry(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Amount (₹)</label>
+                    <input type="number" id="form-amount" required min="1" class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-3 py-2 text-white font-semibold text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Select Account</label>
+                    <select id="form-source" class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-3 py-2 text-white text-sm focus:outline-none">
+                        <option value="lite">⚡ UPI Lite Wallet</option>
+                        <option value="bank">🏦 Bank Account</option>
+                    </select>
+                </div>
+                <div id="cat-block">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Category</label>
+                    <select id="form-category" class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-3 py-2 text-white text-sm focus:outline-none">
+                        <option value="Movie">🎬 Movie / Entertainment</option>
+                        <option value="Food">🍔 Food & Drinks</option>
+                        <option value="Travel">🚗 Fuel & Commute</option>
+                        <option value="Shopping">🛍️ Shopping</option>
+                        <option value="Bills">📱 Recharge & Bills</option>
+                        <option value="Others">🧩 Others</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+                    <input type="text" id="form-desc" placeholder="Details (e.g., Chai, Popcorn)" class="w-full bg-slate-850 border border-slate-700/60 rounded-xl px-3 py-2 text-white text-sm focus:outline-none">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-xl text-xs transition mt-2 cursor-pointer shadow-md">Add to Ledger</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Core Software Automation Layer -->
+    <script>
+        let state = { bank: 5000, lite: 1000, logs: [] };
+        let activeMode = 'expense';
+
+        // Initialize Native Sandbox
+        function initApp() {
+            const data = localStorage.getItem('fintrack_daily_core');
+            if (data) {
+                state = JSON.parse(data);
+            } else {
+                localStorage.setItem('fintrack_daily_core', JSON.stringify(state));
+            }
+            renderUI();
+        }
+
+        function renderUI() {
+            document.getElementById('bank-display').innerText = `₹${state.bank.toFixed(2)}`;
+            document.getElementById('lite-display').innerText = `₹${state.lite.toFixed(2)}`;
+            document.getElementById('log-count').innerText = `${state.logs.length} entries`;
+
+            const container = document.getElementById('logs-container');
+            container.innerHTML = state.logs.length === 0 ? `<div class="text-center py-12 text-slate-500 text-xs font-medium">Koi entries nahi hain aaj.</div>` : '';
+
+            const totals = { "Movie": 0, "Food": 0, "Travel": 0, "Shopping": 0, "Bills": 0, "Others": 0 };
+
+            state.logs.forEach(item => {
+                const isExp = item.type === 'expense';
+                const el = document.createElement('div');
+                el.className = `flex items-center justify-between p-3 rounded-xl bg-slate-800/40 border ${isExp ? 'border-rose-900/20 bg-rose-950/5' : 'border-emerald-900/20 bg-emerald-950/5'}`;
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm ${isExp ? 'bg-rose-950/60 text-rose-400' : 'bg-emerald-950/60 text-emerald-400'}">${isExp ? '📉' : '📈'}</div>
+                        <div>
+                            <p class="text-xs font-bold text-white">${item.desc} <span class="text-[9px] font-normal text-slate-500">(${item.source === 'bank' ? '🏦 Bank' : '⚡ Lite'})</span></p>
+                            <p class="text-[10px] text-slate-400 font-medium">${item.category}</p>
+                        </div>
+                    </div>
+                    <p class="text-xs font-black ${isExp ? 'text-rose-400' : 'text-emerald-400'}">${isExp ? '-' : '+'}₹${Number(item.amount).toFixed(2)}</p>
+                `;
+                container.appendChild(el);
+
+                if (isExp && totals[item.category] !== undefined) {
+                    totals[item.category] += Number(item.amount);
+                }
+            });
+
+            // Daily Summary Card Allocation Engine
+            if (state.logs.length > 0 && Object.values(totals).some(v => v > 0)) {
+                const sumDiv = document.createElement('div');
+                sumDiv.className = "mt-4 pt-3 border-t border-dashed border-slate-700 bg-slate-800/20 p-3 rounded-xl space-y-1.5 shadow-inner animate-fade-in";
+                let html = `<p class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">📊 Aaj Ka Expense Summary:</p>`;
+                for (const [cat, val] of Object.entries(totals)) {
+                    if (val > 0) {
+                        html += `<div class="flex justify-between text-[11px] font-semibold text-slate-400"><span>🔹 ${cat}:</span><span class="text-white font-bold">₹${val.toFixed(2)}</span></div>`;
+                    }
+                }
+                sumDiv.innerHTML = html;
+                container.appendChild(sumDiv);
+            }
+
+            localStorage.setItem('fintrack_daily_core', JSON.stringify(state));
+        }
+
+        function openModal(mode) {
+            activeMode = mode;
+            document.getElementById('tx-modal').classList.remove('hidden');
+            document.getElementById('modal-title').innerText = mode === 'income' ? "💰 Income / Deposit" : "💸 Expense Entry";
+            document.getElementById('cat-block').style.display = mode === 'income' ? 'none' : 'block';
+            document.getElementById('modal-form').reset();
+        }
+
+        function closeModal() { document.getElementById('tx-modal').classList.add('hidden'); }
+
+        function saveEntry(e) {
+            e.preventDefault();
+            const amount = Number(document.getElementById('form-amount').value);
+            const source = document.getElementById('form-source').value;
+            const desc = document.getElementById('form-desc').value.trim() || (activeMode === 'income' ? 'Money Received' : 'Expense Made');
+            const category = activeMode === 'income' ? 'Deposit' : document.getElementById('form-category').value;
+
+            if (activeMode === 'expense') {
+                if (source === 'bank' && amount > state.bank) return alert("Bank Account mein balance nahi hai bhai!");
+                if (source === 'lite' && amount > state.lite) return alert("UPI Lite Wallet empty hai!");
+                state[source] -= amount;
+            } else {
+                state[source] += amount;
+            }
+
+            state.logs.unshift({ type: activeMode, amount, source, desc, category });
+            closeModal();
+            renderUI();
+        }
+
+        function resetData() {
+            if (confirm("Kya sach mein saara daily transaction data clear karna hai?")) {
+                state = { bank: 5000, lite: 1000, logs: [] };
+                renderUI();
+            }
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
